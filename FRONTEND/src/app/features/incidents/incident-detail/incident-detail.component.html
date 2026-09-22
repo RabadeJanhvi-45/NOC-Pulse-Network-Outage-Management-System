@@ -1,0 +1,363 @@
+@if (loading()) {
+  <div class="loading-box">Loading incident workspace…</div>
+} @else {
+  @if (incident(); as inc) {
+    <div class="incident-workspace">
+      <!-- Header -->
+      <div class="workspace-header">
+        <div>
+          <button class="back-link" (click)="backToList()">
+            <svg viewBox="0 0 24 24" class="icon icon-sm"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <span>Back to Incidents</span>
+          </button>
+          <h2>Incident #{{ inc.id }} — <span class="highlight">{{ inc.deviceId }}</span></h2>
+          <p class="subtitle">{{ inc.description || 'Auto-generated incident ticket' }}</p>
+        </div>
+
+        <div class="header-right-group">
+          <div class="header-badges">
+            <span class="badge badge--p-{{ (inc.priority || 'p3') | lowercase }}">
+              Priority: {{ inc.priority }}
+            </span>
+            <span class="badge badge--status-{{ (inc.status || 'new') | lowercase }}">
+              Status: {{ inc.status }}
+            </span>
+          </div>
+
+          <div class="workspace-action-group">
+            <!-- ENGINEER & ADMIN Operational Actions -->
+            @if (auth.hasAnyRole('ENGINEER', 'ADMIN')) {
+              @if (inc.status === 'ASSIGNED') {
+                <button class="btn-primary btn-sm" [disabled]="isActionSubmitting()" (click)="startWork()" title="Transition incident to IN_PROGRESS">
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <span>Start Work</span>
+                </button>
+                @if (auth.hasAnyRole('ENGINEER') && !auth.hasAnyRole('ADMIN')) {
+                  <button class="btn-danger btn-sm" [disabled]="isActionSubmitting()" (click)="openRejectAssignmentModal()">
+                    <svg viewBox="0 0 24 24" class="icon icon-sm"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    <span>Reject</span>
+                  </button>
+                }
+              }
+              @if (inc.status === 'IN_PROGRESS') {
+                <button class="btn-success btn-sm" [disabled]="isActionSubmitting()" (click)="openResolveModal()">
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Resolve</span>
+                </button>
+              }
+            }
+
+            <!-- NOC OPERATOR & ADMIN Quality Gate Verification Actions -->
+            @if (auth.hasAnyRole('NOC_OPERATOR', 'ADMIN')) {
+              @if (inc.status === 'RESOLVED') {
+                <button class="btn-success btn-sm" [disabled]="isActionSubmitting()" (click)="verifyAndClose()">
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <span>Verify & Close</span>
+                </button>
+                <button class="btn-warning btn-sm" [disabled]="isActionSubmitting()" (click)="openRejectResolutionModal()">
+                  <span>Reject</span>
+                </button>
+              }
+            }
+
+            <!-- ADMIN Management Reassignment Action -->
+            @if (auth.hasAnyRole('ADMIN') && inc.status !== 'CLOSED') {
+              <button class="btn-secondary btn-sm" (click)="decideRejection(true)" title="Force reassign to next available engineer">
+                Force Reassign
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Lifecycle Visual Pipeline -->
+      <div class="pipeline-card">
+        <div class="pipeline-steps">
+          @for (stage of lifecycleStages; track stage; let idx = $index) {
+            <div
+              class="pipeline-step"
+              [class.pipeline-step--completed]="isStageCompleted(stage)"
+              [class.pipeline-step--active]="isStageActive(stage)"
+            >
+              <div class="step-bubble">
+                @if (isStageCompleted(stage)) {
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><polyline points="20 6 9 17 4 12"/></svg>
+                } @else {
+                  {{ idx + 1 }}
+                }
+              </div>
+              <div class="step-label">{{ stage }}</div>
+            </div>
+            @if (idx < lifecycleStages.length - 1) {
+              <div
+                class="pipeline-connector"
+                [class.pipeline-connector--filled]="isStageCompleted(lifecycleStages[idx + 1]) || isStageActive(lifecycleStages[idx + 1])"
+              ></div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Main Workspace Grid -->
+      <div class="workspace-grid">
+        <!-- Left Column: Details & Resolution Info -->
+        <div class="workspace-col">
+          <div class="card">
+            <h3>Incident Information</h3>
+            <div class="info-list">
+              <div class="info-row">
+                <span class="info-label">Device Target:</span>
+                <span class="info-val font-bold"><code>{{ inc.deviceId }}</code></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Alarm Source:</span>
+                <span class="info-val">{{ inc.alarmId ? '#' + inc.alarmId : 'Automated System Alert' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Assigned Engineer:</span>
+                <span class="info-val highlight">
+                  @if (inc.assignedEngineer && inc.assignedEngineer !== 'Unassigned') {
+                    <span style="display: inline-flex; align-items: center; gap: 6px;">
+                      <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      <span>{{ inc.assignedEngineer }}</span>
+                    </span>
+                    @if (inc.assignedEngineerSpecialization) {
+                      <span class="muted" style="font-size: 0.85rem; margin-left: 4px;">({{ inc.assignedEngineerSpecialization }})</span>
+                    }
+                  } @else {
+                    <span class="muted">Unassigned</span>
+                  }
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Created At:</span>
+                <span class="info-val">{{ inc.createdAt | date: 'medium' }}</span>
+              </div>
+              @if (inc.closedAt) {
+                <div class="info-row">
+                  <span class="info-label">Closed At:</span>
+                  <span class="info-val">{{ inc.closedAt | date: 'medium' }}</span>
+                </div>
+              }
+            </div>
+
+            @if (inc.rootCause || inc.resolutionSteps || inc.resolutionNotes) {
+              <div class="resolution-summary">
+                <h4>Resolution Details</h4>
+                @if (inc.rootCause) {
+                  <p><strong>Root Cause:</strong> {{ inc.rootCause }}</p>
+                }
+                @if (inc.resolutionSteps) {
+                  <p><strong>Steps Taken:</strong> {{ inc.resolutionSteps }}</p>
+                }
+                @if (inc.resolutionNotes) {
+                  <p><strong>Notes:</strong> {{ inc.resolutionNotes }}</p>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- SLA Card -->
+          <div class="card">
+            <h3>SLA Compliance</h3>
+            @if (sla(); as s) {
+              <div class="sla-box" [class.sla-box--breached]="s.isBreached">
+                <div class="sla-metric">
+                  <span class="sla-number">{{ s.slaThreshold || '—' }}m</span>
+                  <span class="sla-lbl">Target SLA</span>
+                </div>
+                <div class="sla-metric">
+                  <span class="sla-number">{{ s.resolutionTime || '—' }}m</span>
+                  <span class="sla-lbl">Elapsed Time</span>
+                </div>
+                <div class="sla-metric">
+                  <span class="badge" [class]="s.isBreached ? 'badge--p-p1' : 'badge--status-closed'">
+                    {{ s.isBreached ? 'BREACHED' : 'WITHIN SLA' }}
+                  </span>
+                  <span class="sla-lbl">Compliance Status</span>
+                </div>
+              </div>
+            } @else {
+              <p class="muted">SLA calculation active based on priority ({{ inc.priority }}).</p>
+            }
+          </div>
+
+          <!-- Assignment History -->
+          <div class="card">
+            <h3>Assignment Timeline</h3>
+            @if (assignments().length === 0) {
+              <p class="muted">No reassignments recorded.</p>
+            } @else {
+              <ul class="timeline-list">
+                @for (a of assignments(); track a.id) {
+                  <li>
+                    <span class="timeline-dot"></span>
+                    <div>
+                      <strong>{{ a.assigneeId }}</strong> ({{ a.assigneeType }})
+                      @if (a.isCurrent) {
+                        <span class="badge badge--status-assigned">current</span>
+                      }
+                      <p class="muted">{{ a.assignedAt | date: 'medium' }}</p>
+                    </div>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+
+        <!-- Right Column: Notes & Audit History -->
+        <div class="workspace-col">
+          <!-- Progress Notes -->
+          <div class="card">
+            <h3>Progress Notes & Activity</h3>
+
+            @if (inc.status !== 'CLOSED') {
+              <form [formGroup]="noteForm" (ngSubmit)="submitNote()" class="note-input-row">
+                <input formControlName="noteText" placeholder="Add an engineering progress note or update…" />
+                <button type="submit" class="btn-primary" [disabled]="isActionSubmitting() || noteForm.invalid">
+                  Add Note
+                </button>
+              </form>
+            }
+
+            <div class="notes-feed">
+              @for (n of notes(); track n.id) {
+                <div class="note-card">
+                  <div class="note-card__header">
+                    <span class="note-author">{{ n.authorId }}</span>
+                    <span class="note-time">{{ n.createdAt | date: 'medium' }}</span>
+                  </div>
+                  <p class="note-text">{{ n.noteText }}</p>
+                </div>
+              }
+              @if (notes().length === 0) {
+                <p class="muted">No progress notes recorded yet.</p>
+              }
+            </div>
+          </div>
+
+          <!-- Audit Changes History -->
+          <div class="card">
+            <h3>Audit Field History</h3>
+            @if (history().length === 0) {
+              <p class="muted">No property changes logged.</p>
+            } @else {
+              <ul class="audit-list">
+                @for (h of history(); track h.id) {
+                  <li>
+                    <strong>{{ h.fieldChanged }}</strong> changed from <code>{{ h.oldValue || 'none' }}</code> to <code>{{ h.newValue || 'none' }}</code>
+                    <span class="muted">by {{ h.changedBy || 'system' }} at {{ h.changedAt | date: 'medium' }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="empty-box">
+      <h3>Incident Not Found</h3>
+      <p>The requested incident does not exist or has been removed.</p>
+      <button class="btn-primary" (click)="backToList()">Return to List</button>
+    </div>
+  }
+}
+
+<!-- Resolve Modal (Engineer) -->
+@if (showResolveModal()) {
+  <div class="modal-backdrop" (click)="closeResolveModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>Resolve Incident #{{ incidentId }}</h3>
+      <p class="subtitle">Specify the root cause and steps taken to resolve the network fault.</p>
+
+      <form [formGroup]="resolveForm" (ngSubmit)="submitResolve()">
+        <label>Root Cause</label>
+        <textarea
+          formControlName="rootCause"
+          rows="3"
+          placeholder="e.g. Transceiver fiber mismatch on port TenGigE0/0/1"
+        ></textarea>
+        @if (resolveForm.controls.rootCause.invalid && resolveForm.controls.rootCause.touched) {
+          <p class="field-error">Root cause is required.</p>
+        }
+
+        <label>Resolution Steps</label>
+        <textarea
+          formControlName="resolutionSteps"
+          rows="3"
+          placeholder="e.g. Replaced faulty SFP+ module and verified link up state."
+        ></textarea>
+        @if (resolveForm.controls.resolutionSteps.invalid && resolveForm.controls.resolutionSteps.touched) {
+          <p class="field-error">Resolution steps are required.</p>
+        }
+
+        <div class="modal__actions">
+          <button type="button" class="btn-secondary" (click)="closeResolveModal()">Cancel</button>
+          <button type="submit" class="btn-success" [disabled]="isActionSubmitting()">
+            {{ isActionSubmitting() ? 'Submitting…' : 'Submit Resolution' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Reject Assignment Modal (Engineer) -->
+@if (showRejectAssignmentModal()) {
+  <div class="modal-backdrop" (click)="closeRejectAssignmentModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>Reject Assignment</h3>
+      <p class="subtitle">State your reason for declining this incident. An Administrator will review your request.</p>
+
+      <form [formGroup]="rejectAssignmentForm" (ngSubmit)="submitRejectAssignment()">
+        <label>Rejection Reason</label>
+        <textarea
+          formControlName="reason"
+          rows="4"
+          placeholder="e.g. Requires Optical DWDM specialization; currently on high-severity P1 router incident."
+        ></textarea>
+        @if (rejectAssignmentForm.controls.reason.invalid && rejectAssignmentForm.controls.reason.touched) {
+          <p class="field-error">Reason is required.</p>
+        }
+
+        <div class="modal__actions">
+          <button type="button" class="btn-secondary" (click)="closeRejectAssignmentModal()">Cancel</button>
+          <button type="submit" class="btn-danger" [disabled]="isActionSubmitting()">
+            {{ isActionSubmitting() ? 'Submitting…' : 'Confirm Rejection' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Reject Resolution Modal (NOC Operator) -->
+@if (showRejectResolutionModal()) {
+  <div class="modal-backdrop" (click)="closeRejectResolutionModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>Reject Resolution & Return to Engineer</h3>
+      <p class="subtitle">Explain why service restoration verification failed.</p>
+
+      <form [formGroup]="rejectResolutionForm" (ngSubmit)="submitRejectResolution()">
+        <label>Verification Notes / Deficiencies</label>
+        <textarea
+          formControlName="verificationNotes"
+          rows="4"
+          placeholder="e.g. Ping latency is still exceeding 250ms threshold; alarm is still oscillating."
+        ></textarea>
+        @if (rejectResolutionForm.controls.verificationNotes.invalid && rejectResolutionForm.controls.verificationNotes.touched) {
+          <p class="field-error">Verification notes are required.</p>
+        }
+
+        <div class="modal__actions">
+          <button type="button" class="btn-secondary" (click)="closeRejectResolutionModal()">Cancel</button>
+          <button type="submit" class="btn-warning" [disabled]="isActionSubmitting()">
+            {{ isActionSubmitting() ? 'Submitting…' : 'Return to In Progress' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,37 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: device-service
+  datasource:
+    url: jdbc:h2:file:./data/devicedb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    com.noc.deviceservice: INFO
+
+# Must match auth-service's jwt.secret / jwt.issuer exactly — this service
+# only validates tokens (HS256, shared secret), it never issues them.
+jwt:
+  secret: dev-only-change-me-network-outage-dashboard-auth-service-secret-key-2024
+  issuer: auth-service

@@ -1,0 +1,199 @@
+<div class="alarms-page">
+  <div class="alarms-page__header">
+    <div>
+      <h2>Alarm Management</h2>
+      <p class="subtitle">Monitor active alerts across all network devices. Raising an alarm auto-generates an Incident and assigns an Engineer.</p>
+    </div>
+
+    @if (canWrite()) {
+      <button class="btn-primary" (click)="openForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Raise Alarm</span>
+      </button>
+    }
+  </div>
+
+  <!-- Filter Toolbar -->
+  <div class="filter-card">
+    <form [formGroup]="filterForm" (ngSubmit)="fetchAlarms()" class="filter-grid">
+      <div class="filter-item filter-item--search">
+        <label for="alarmDevFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Device Target</span>
+        </label>
+        <div class="input-with-icon">
+          <input id="alarmDevFilter" type="text" formControlName="deviceId" placeholder="Filter by device ID (e.g. RTR-CORE-01)…" />
+          <svg viewBox="0 0 24 24" class="input-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <label for="alarmSevFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Severity</span>
+        </label>
+        <select id="alarmSevFilter" formControlName="severity">
+          <option value="">All Severities</option>
+          @for (s of severityOptions; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="alarmStatusFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Lifecycle Status</span>
+        </label>
+        <select id="alarmStatusFilter" formControlName="status">
+          <option value="">Active & Acknowledged</option>
+          <option value="Active">Active Only</option>
+          <option value="Acknowledged">Acknowledged Only</option>
+          <option value="Cleared">Cleared Alarms</option>
+          <option value="all">All Records</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          <svg viewBox="0 0 24 24" class="icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Filter</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()" [disabled]="loading()">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Reset</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading alarms…</p>
+    </div>
+  } @else if (alarms().length === 0) {
+    <div class="empty-box">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <h3>No alarms found</h3>
+      <p>All network devices are operating normally or no matching alarms exist.</p>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="alarms-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Device ID</th>
+            <th>Alarm Type</th>
+            <th>Severity</th>
+            <th>Status</th>
+            <th>Raised By</th>
+            <th>Raised At</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (alarm of alarms(); track alarm.id) {
+            <tr>
+              <td>#{{ alarm.id }}</td>
+              <td class="font-bold"><code>{{ alarm.deviceId }}</code></td>
+              <td>{{ alarm.alarmType }}</td>
+              <td>
+                <span class="badge" [class]="'badge--sev-' + (alarm.severity | lowercase)">
+                  {{ alarm.severity }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="'badge--status-' + (alarm.status | lowercase)">
+                  {{ alarm.status }}
+                </span>
+              </td>
+              <td><code>{{ alarm.raisedBy || 'system' }}</code></td>
+              <td>{{ alarm.raisedAt | date: 'medium' }}</td>
+              <td class="text-right">
+                @if (canAcknowledgeOrClear()) {
+                  <div style="display: inline-flex; gap: 6px; justify-content: flex-end; align-items: center;">
+                    @if (alarm.status === 'Active') {
+                      <button
+                        class="btn-sm btn-secondary"
+                        [disabled]="acknowledgingId() === alarm.id"
+                        (click)="acknowledge(alarm)"
+                      >
+                        {{ acknowledgingId() === alarm.id ? '…' : 'Acknowledge' }}
+                      </button>
+                    }
+                    @if (alarm.status !== 'Cleared') {
+                      <button
+                        class="btn-sm btn-primary"
+                        style="background-color: #dc2626;"
+                        [disabled]="clearingId() === alarm.id"
+                        (click)="clearAlarm(alarm)"
+                      >
+                        {{ clearingId() === alarm.id ? '…' : 'Clear' }}
+                      </button>
+                    } @else {
+                      <span class="acknowledged-label">{{ alarm.status }}</span>
+                    }
+                  </div>
+                } @else {
+                  <span class="badge" [class]="'badge--status-' + (alarm.status | lowercase)">
+                    {{ alarm.status }}
+                  </span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (showForm()) {
+  <div class="modal-backdrop" (click)="cancelForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>Raise New Alarm</h3>
+      <div class="info-banner" style="display: flex; align-items: flex-start; gap: 8px;">
+        <svg viewBox="0 0 24 24" class="icon" style="color: #fbbf24; margin-top: 2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Raising an alarm automatically generates an Incident and immediately assigns an available Engineer based on specialization and workload matching.</span>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label>Active Device</label>
+        <select formControlName="deviceId">
+          <option value="" disabled>Select an active device</option>
+          @for (d of devices(); track d.id) {
+            @if (d.status === 'Active') {
+              <option [value]="d.deviceId">{{ d.deviceId }} — {{ d.name }} ({{ d.deviceType }})</option>
+            }
+          }
+        </select>
+
+        <label>Alarm Type</label>
+        <select formControlName="alarmType">
+          <option value="" disabled>Select alarm classification / event type</option>
+          @for (t of alarmTypeOptions; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+
+        <label>Severity <span class="muted">(optional — auto-classified if blank)</span></label>
+        <select formControlName="severity">
+          <option value="">Auto-classify from severity rules</option>
+          @for (s of severityOptions; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+
+        <div class="modal__actions">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span>{{ isSubmitting() ? 'Raising Alarm…' : 'Raise Alarm' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

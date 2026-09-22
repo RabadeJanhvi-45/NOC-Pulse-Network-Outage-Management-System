@@ -1,0 +1,40 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: dashboard-reporting-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# dashboard-reporting-service has no database of its own — it is a stateless
+# aggregation layer that calls device-service, alarm-service and
+# incident-service over Feign (resolved through Eureka by application name)
+# and composes the results into dashboard widgets and reports on the fly.
+feign:
+  client:
+    config:
+      device-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+      alarm-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+      incident-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+
+logging:
+  level:
+    com.noc.dashboardservice: INFO
+
+# Must match auth-service's jwt.secret / jwt.issuer exactly — this service
+# only validates tokens (HS256, shared secret), it never issues them.
+jwt:
+  secret: dev-only-change-me-network-outage-dashboard-auth-service-secret-key-2024
+  issuer: auth-service

@@ -1,0 +1,9 @@
+<div class="toast-stack">
+  @for (n of notifications.notifications(); track n.id) {
+    <div class="toast" [class]="'toast--' + n.level" (click)="notifications.dismiss(n.id)">
+      {{ n.message }}
+    </div>
+  }
+</div>
+
+<router-outlet />

@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: device-service
+  datasource:
+    url: jdbc:h2:mem:device-test-db;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+eureka:
+  client:
+    enabled: false
+
+jwt:
+  secret: dev-only-change-me-network-outage-dashboard-auth-service-secret-key-2024
+  issuer: auth-service
+
+logging:
+  level:
+    com.noc.deviceservice: WARN

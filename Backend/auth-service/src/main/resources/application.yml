@@ -1,0 +1,38 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: jdbc:h2:file:./data/authdb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# Dev-only secret — move to an environment variable / secrets manager before
+# anything resembling production. Must be >= 256 bits for HS256.
+jwt:
+  secret: dev-only-change-me-network-outage-dashboard-auth-service-secret-key-2024
+  expiration-ms: 3600000   # 1 hour
+  issuer: auth-service
+
+logging:
+  level:
+    com.noc.authservice: INFO

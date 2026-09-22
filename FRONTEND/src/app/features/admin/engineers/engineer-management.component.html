@@ -1,0 +1,119 @@
+<div class="admin-page-wrap">
+  <div class="admin-page-header">
+    <div>
+      <span class="eyebrow">Fleet Governance</span>
+      <h2>Engineer Specialization Config</h2>
+      <p class="subtitle">Assign primary specializations for automatic incident routing.</p>
+    </div>
+    <button class="btn-secondary btn-sm" (click)="fetchEngineers()" [disabled]="loading()">
+      <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      <span>Refresh</span>
+    </button>
+  </div>
+
+  <!-- Concise Fleet Stats Bar -->
+  <div class="kpi-mini-grid">
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Total Engineers</span>
+      <strong class="kpi-value">{{ totalCount() }}</strong>
+    </div>
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Configured Specializations</span>
+      <strong class="kpi-value text-success">{{ assignedCount() }}</strong>
+    </div>
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Pending Configuration</span>
+      <strong class="kpi-value" [class.text-danger]="unassignedCount() > 0">{{ unassignedCount() }}</strong>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading engineer fleet…</p>
+    </div>
+  } @else if (engineers().length === 0) {
+    <div class="empty-card">
+      <svg viewBox="0 0 24 24" class="icon icon-lg empty-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <h3>No Engineers Registered</h3>
+      <p>Engineers registered with the ENGINEER role will appear here.</p>
+    </div>
+  } @else {
+    <div class="table-responsive-card">
+      <table class="compact-table">
+        <thead>
+          <tr>
+            <th style="width: 75px;">ID</th>
+            <th>Username</th>
+            <th>Full Name</th>
+            <th>Primary Specialization</th>
+            <th>Secondary Skills</th>
+            <th class="text-right" style="width: 140px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (eng of engineers(); track eng.userId) {
+            <tr>
+              <td><code>#{{ eng.userId }}</code></td>
+              <td class="font-bold">
+                <span class="eng-name">{{ eng.username || '—' }}</span>
+              </td>
+              <td>{{ eng.fullName || '—' }}</td>
+              <td>
+                @if (eng.primarySpecialization) {
+                  <span class="badge badge-primary">{{ eng.primarySpecialization }}</span>
+                } @else {
+                  <span class="unassigned-badge">Not Set</span>
+                }
+              </td>
+              <td>
+                <div class="skills-wrap">
+                  @for (s of eng.skills || []; track s.id) {
+                    <span class="skill-tag">{{ s.skillName }}</span>
+                  }
+                  @if (!eng.skills || eng.skills.length === 0) {
+                    <span class="no-skills">—</span>
+                  }
+                </div>
+              </td>
+              <td class="text-right">
+                <button class="btn-sm btn-primary" (click)="openEditSpec(eng)">
+                  Set Specialization
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (editingEngineer()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <h3>Set Primary Specialization</h3>
+        <p>Set primary specialization for <strong>{{ editingEngineer()?.username }}</strong>:</p>
+
+        <form [formGroup]="specForm" (ngSubmit)="saveSpecialization()">
+          <label for="primarySpec">Select Primary Specialization</label>
+          <select id="primarySpec" formControlName="specialization">
+            <option value="" disabled>-- Select a Specialization --</option>
+            @for (opt of specializationOptions(); track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select>
+          @if (specForm.controls.specialization.invalid && specForm.controls.specialization.touched) {
+            <p class="field-error">Please select a primary specialization.</p>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="isSaving()">
+              {{ isSaving() ? 'Saving…' : 'Save Specialization' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

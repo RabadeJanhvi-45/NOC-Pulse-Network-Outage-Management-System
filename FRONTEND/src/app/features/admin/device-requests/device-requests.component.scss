@@ -1,0 +1,221 @@
+.page-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+
+  h2 {
+    font-family: var(--font-heading);
+    font-size: 1.85rem;
+    font-weight: 500;
+    color: var(--color-text-heading);
+    margin: 0 0 0.25rem;
+  }
+  .subtitle {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.table-container {
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: none;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+
+    th, td {
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 0.88rem;
+    }
+
+    th {
+      background: var(--color-bg-secondary);
+      color: var(--color-primary);
+      font-family: var(--font-body);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+    }
+
+    tbody tr {
+      transition: background var(--transition-fast);
+
+      &:nth-child(even) {
+        background: rgba(239, 225, 214, 0.25);
+      }
+
+      &:hover {
+        background: rgba(239, 225, 214, 0.5);
+      }
+    }
+  }
+}
+
+.font-bold {
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.text-right {
+  text-align: right;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &--pending {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+    border: 1px solid var(--color-warning-border);
+  }
+  &--approved {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+    border: 1px solid var(--color-success-border);
+  }
+  &--rejected {
+    background: var(--color-critical-bg);
+    color: var(--color-critical);
+    border: 1px solid var(--color-critical-border);
+  }
+}
+
+.action-buttons {
+  display: inline-flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.reviewed-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.empty-card {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--color-surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  .empty-icon {
+    font-size: 2.5rem;
+    color: var(--color-success);
+    margin-bottom: 1rem;
+  }
+  h3 {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    color: var(--color-text-heading);
+    margin: 0 0 0.5rem;
+  }
+  p {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+}
+
+.loading-box {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-muted);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(46, 38, 34, 0.45);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 480px;
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem;
+  color: var(--color-text-main);
+  box-shadow: var(--shadow-lg);
+
+  h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-top: 0;
+    color: var(--color-text-heading);
+  }
+  p {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+
+  label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 1rem;
+    margin-bottom: 0.45rem;
+    color: var(--color-text-muted);
+  }
+
+  textarea {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    background: var(--color-surface-input);
+    border: 1px solid var(--color-border);
+    border-radius: 2px;
+    color: var(--color-text-main);
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.88rem;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      background: #FFFFFF;
+    }
+  }
+
+  .field-error {
+    color: var(--color-critical);
+    font-size: 0.78rem;
+    margin: 0.25rem 0 0;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+}

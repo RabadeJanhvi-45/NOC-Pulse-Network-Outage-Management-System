@@ -1,0 +1,71 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # Let Eureka-registered service names resolve automatically too,
+      # but we define explicit routes below for clear path -> service mapping.
+      discovery:
+        locator:
+          enabled: false
+
+      routes:
+        # ---- auth-service (8081) ----
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**,/api/users,/api/users/**,/api/roles,/api/roles/**,/api/permissions,/api/permissions/**,/api/audit-logs,/api/audit-logs/**,/api/registration-requests,/api/registration-requests/**,/api/notifications,/api/notifications/**,/api/engineers,/api/engineers/**
+
+        # ---- device-service (8082) ----
+        - id: device-service
+          uri: lb://device-service
+          predicates:
+            - Path=/api/devices,/api/devices/**,/api/device-requests,/api/device-requests/**,/api/device-type-specializations,/api/device-type-specializations/**
+
+        # ---- alarm-service (8083) ----
+        - id: alarm-service
+          uri: lb://alarm-service
+          predicates:
+            - Path=/api/alarms,/api/alarms/**
+
+        # ---- incident-service (8084) ----
+        - id: incident-service
+          uri: lb://incident-service
+          predicates:
+            - Path=/api/incidents,/api/incidents/**
+
+        # ---- dashboard-reporting-service (8085) ----
+        - id: dashboard-reporting-service
+          uri: lb://dashboard-reporting-service
+          predicates:
+            - Path=/api/dashboard,/api/dashboard/**,/api/reports,/api/reports/**
+
+      # CORS so a separate frontend (React/Angular dev server etc.) can call the gateway directly
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders: "*"
+            allowCredentials: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

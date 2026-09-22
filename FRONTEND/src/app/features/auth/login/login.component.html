@@ -1,0 +1,76 @@
+<div class="auth-screen">
+  <aside class="auth-hero relative-canvas">
+    <div class="halo-accent-circle halo-accent-circle--lg halo-accent-circle--double" style="top: -100px; left: -80px;"></div>
+    <div class="halo-accent-circle halo-accent-circle--md" style="bottom: 40px; right: -60px;"></div>
+
+    <div class="auth-hero__brand">
+      <span class="auth-hero__logo">◎</span>
+      <div>
+        <h1>NOC PULSE</h1>
+        <p>Network Operations Dashboard</p>
+      </div>
+    </div>
+
+    <div class="auth-hero__copy">
+      <span class="eyebrow-hero">Enterprise Network Assurance</span>
+      <h2>Welcome <span>Back</span></h2>
+      <p>Sign in to monitor your mission-critical network infrastructure, analyze live telemetry, and coordinate real-time incident response.</p>
+    </div>
+
+    <div class="auth-hero__footer">
+      <span class="telemetry-badge">
+        <span class="badge-dot"></span>
+        <span>Telemetry Engine Online</span>
+      </span>
+    </div>
+  </aside>
+
+  <section class="auth-form">
+    <div class="auth-form__card">
+      <div class="auth-form__header">
+        <span class="eyebrow">Secure Console Access</span>
+        <h2>Sign In</h2>
+        <p class="auth-form__subtitle">Enter your operator or engineer credentials to access the console.</p>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label for="username">Username</label>
+        <input
+          id="username"
+          type="text"
+          formControlName="username"
+          placeholder="Enter your username"
+          autocomplete="username"
+        />
+        @if (form.controls.username.invalid && form.controls.username.touched) {
+          <p class="field-error">Username is required.</p>
+        }
+
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+          />
+          <button type="button" class="password-toggle" (click)="togglePasswordVisibility()">
+            {{ showPassword() ? 'Hide' : 'Show' }}
+          </button>
+        </div>
+        @if (form.controls.password.invalid && form.controls.password.touched) {
+          <p class="field-error">Password is required.</p>
+        }
+
+        <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+          {{ isSubmitting() ? 'Signing in…' : 'Sign In' }}
+        </button>
+
+        <div class="auth-form__footer">
+          New here? Register as <a routerLink="/register">NOC Operator</a> or <a routerLink="/register-engineer">Network Engineer</a>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>

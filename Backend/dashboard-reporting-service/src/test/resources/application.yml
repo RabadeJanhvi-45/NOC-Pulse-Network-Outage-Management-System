@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: dashboard-reporting-service
+
+eureka:
+  client:
+    enabled: false
+
+jwt:
+  secret: dev-only-change-me-network-outage-dashboard-auth-service-secret-key-2024
+  issuer: auth-service
+
+logging:
+  level:
+    com.noc.dashboardservice: WARN

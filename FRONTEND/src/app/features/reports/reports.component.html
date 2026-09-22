@@ -1,0 +1,203 @@
+<div class="reports-page">
+  <!-- Printable Document Header (Appears in Print & PDF export) -->
+  <div class="print-doc-header">
+    <div class="print-doc-brand">
+      <span class="print-logo">◎</span>
+      <div>
+        <h1>NOC PULSE — Executive Network Telemetry Report</h1>
+        <p>Operational Assurance, Incident Resolution Metrics & Device Audit</p>
+      </div>
+    </div>
+    <div class="print-doc-meta">
+      <div><strong>Export Timestamp:</strong> {{ (outageReport()?.generatedAt || rangeForm.value.to) | date: 'medium' }}</div>
+      <div><strong>Status:</strong> Official Audit Record</div>
+    </div>
+  </div>
+
+  <!-- Interactive Screen Header -->
+  <div class="admin-page-header no-print">
+    <div>
+      <span class="eyebrow">Intelligence & Audit</span>
+      <h2>Network Reporting</h2>
+      <p class="subtitle">Operational analytics, outage summaries, and historical device telemetry.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="printReport()" title="Print report or save as PDF">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Print / Save PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Outage Summary -->
+  <section class="card print-card">
+    <div class="card__header">
+      <div>
+        <h3>Outage Summary Analytics</h3>
+        <p class="card__subtitle">Aggregated alarm activity and incident turnaround metrics over time.</p>
+      </div>
+      <button class="btn-secondary btn-sm no-print" (click)="printReport()" title="Print or save this outage section">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><polyline points="6 9 6 2 18 2 18 9"/><rect x="6" y="14" width="12" height="8"/></svg>
+        <span>Print Summary</span>
+      </button>
+    </div>
+
+    <form [formGroup]="rangeForm" (ngSubmit)="fetchOutageSummary()" class="range-form no-print">
+      <div class="form-group">
+        <label for="fromDate">From</label>
+        <input id="fromDate" type="date" formControlName="from" />
+      </div>
+      <div class="form-group">
+        <label for="toDate">To</label>
+        <input id="toDate" type="date" formControlName="to" />
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="outageLoading()">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        <span>{{ outageLoading() ? 'Loading…' : 'Apply Range' }}</span>
+      </button>
+    </form>
+
+    @if (outageLoading()) {
+      <div class="loading-box no-print">
+        <div class="loading-spinner"></div>
+        <p>Generating summary report…</p>
+      </div>
+    } @else {
+      @if (outageReport(); as report) {
+        <div class="report-meta-tag">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Reporting Window: <strong>{{ report.from | date: 'mediumDate' }}</strong> — <strong>{{ report.to | date: 'mediumDate' }}</strong> (Generated {{ report.generatedAt | date: 'short' }})</span>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat">
+            <span class="stat__label">Alarms Raised</span>
+            <span class="stat__value text-warning">{{ report.totalAlarmsRaised }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat__label">Incidents Created</span>
+            <span class="stat__value text-primary">{{ report.totalIncidentsCreated }}</span>
+          </div>
+          <div class="stat">
+            <span class="stat__label">Incidents Resolved</span>
+            <span class="stat__value text-success">{{ report.incidentsResolved }}</span>
+          </div>
+        </div>
+
+        <div class="breakdown-grid">
+          <div class="breakdown-col">
+            <h4>Alarms by Severity</h4>
+            <ul class="plain-list">
+              @for (entry of report.alarmsBySeverity | keyvalue; track entry.key) {
+                <li>
+                  <span class="list-key">{{ entry.key }}</span>
+                  <span class="list-value"><strong>{{ entry.value }}</strong></span>
+                </li>
+              }
+            </ul>
+          </div>
+          <div class="breakdown-col">
+            <h4>Incidents by Status</h4>
+            <ul class="plain-list">
+              @for (entry of report.incidentsByStatus | keyvalue; track entry.key) {
+                <li>
+                  <span class="list-key">{{ entry.key }}</span>
+                  <span class="list-value"><strong>{{ entry.value }}</strong></span>
+                </li>
+              }
+            </ul>
+          </div>
+        </div>
+      } @else {
+        <p class="muted">No report data available for the selected interval.</p>
+      }
+    }
+  </section>
+
+  <!-- Device History Report -->
+  <section class="card print-card">
+    <div class="card__header">
+      <div>
+        <h3>Device Historical Audit</h3>
+        <p class="card__subtitle">Inspect chronological fault timeline and resolution log for individual appliances.</p>
+      </div>
+      @if (deviceHistoryReport()) {
+        <button class="btn-secondary btn-sm no-print" (click)="printReport()" title="Print or save this device audit">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><polyline points="6 9 6 2 18 2 18 9"/><rect x="6" y="14" width="12" height="8"/></svg>
+          <span>Print Device Audit</span>
+        </button>
+      }
+    </div>
+
+    <form [formGroup]="deviceLookupForm" (ngSubmit)="lookupDeviceHistory()" class="inline-form no-print">
+      <div class="select-wrapper">
+        <select formControlName="deviceId">
+          <option value="" disabled>Select target device to audit…</option>
+          @for (d of devices(); track d.id) {
+            <option [value]="d.deviceId">{{ d.deviceId }} — {{ d.name }}</option>
+          }
+        </select>
+      </div>
+      <button type="submit" class="btn-primary" [disabled]="deviceHistoryLoading()">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span>{{ deviceHistoryLoading() ? 'Loading…' : 'Generate Audit' }}</span>
+      </button>
+    </form>
+
+    @if (deviceHistoryError()) {
+      <div class="empty-box no-print" style="padding: 2rem;">
+        <p class="muted">No historical records found for this device.</p>
+      </div>
+    }
+
+    @if (deviceHistoryReport(); as dh) {
+      <div class="device-history-result">
+        <div class="device-history-header">
+          <div>
+            <h4>{{ dh.deviceName || dh.deviceId }} (<code>{{ dh.deviceId }}</code>)</h4>
+            <span class="status-pill status-pill--{{ dh.deviceStatus | lowercase }}">{{ dh.deviceStatus }}</span>
+          </div>
+        </div>
+
+        <div class="breakdown-grid">
+          <div class="breakdown-col">
+            <h4>Alarms Logged ({{ (dh.alarms || []).length }})</h4>
+            @if (!dh.alarms || dh.alarms.length === 0) {
+              <p class="muted">No alarms recorded for this device.</p>
+            } @else {
+              <ul class="plain-list">
+                @for (a of (dh.alarms || []); track a.id) {
+                  <li>
+                    <div>
+                      <span class="list-key font-bold">{{ a.alarmType }}</span>
+                      <div class="sub-detail">{{ a.status }}</div>
+                    </div>
+                    <span class="badge badge--sev-{{ (a.severity || 'warning') | lowercase }}">{{ a.severity }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          <div class="breakdown-col">
+            <h4>Incidents Tracked ({{ (dh.incidents || []).length }})</h4>
+            @if (!dh.incidents || dh.incidents.length === 0) {
+              <p class="muted">No incidents recorded for this device.</p>
+            } @else {
+              <ul class="plain-list">
+                @for (i of (dh.incidents || []); track i.id) {
+                  <li>
+                    <div>
+                      <span class="list-key font-bold">#{{ i.id }}</span>
+                      <div class="sub-detail">{{ i.status }}</div>
+                    </div>
+                    <span class="badge badge--p-{{ (i.priority || 'p3') | lowercase }}">{{ i.priority }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </section>
+</div>

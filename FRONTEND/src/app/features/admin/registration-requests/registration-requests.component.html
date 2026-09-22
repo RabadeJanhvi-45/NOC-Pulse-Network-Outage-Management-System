@@ -1,0 +1,144 @@
+<div class="admin-page-wrap">
+  <div class="admin-page-header">
+    <div>
+      <span class="eyebrow">Access Control</span>
+      <h2>Register Approvals</h2>
+      <p class="subtitle">Review and manage account self-registration requests.</p>
+    </div>
+    <button class="btn-secondary btn-sm" (click)="fetchRequests()" [disabled]="loading()">
+      <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      <span>Refresh</span>
+    </button>
+  </div>
+
+  <!-- Concise Status KPIs -->
+  <div class="kpi-mini-grid">
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Pending Reviews</span>
+      <strong class="kpi-value" [class.text-warning]="pendingCount() > 0">{{ pendingCount() }}</strong>
+    </div>
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Approved Accounts</span>
+      <strong class="kpi-value text-success">{{ approvedCount() }}</strong>
+    </div>
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Rejected Requests</span>
+      <strong class="kpi-value" [class.text-danger]="rejectedCount() > 0">{{ rejectedCount() }}</strong>
+    </div>
+    <div class="kpi-mini-card">
+      <span class="kpi-label">Total Submissions</span>
+      <strong class="kpi-value">{{ totalCount() }}</strong>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading registration requests…</p>
+    </div>
+  } @else if (requests().length === 0) {
+    <div class="empty-card">
+      <svg viewBox="0 0 24 24" class="icon icon-lg empty-icon" style="color: var(--color-success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h3>No Pending Register Requests</h3>
+      <p>All registration requests have been reviewed.</p>
+    </div>
+  } @else {
+    <div class="table-responsive-card">
+      <table class="compact-table">
+        <thead>
+          <tr>
+            <th style="width: 70px;">ID</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Requested At</th>
+            <th>Status</th>
+            <th>Review Notes</th>
+            <th class="text-right" style="width: 160px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (req of requests(); track req.id) {
+            <tr>
+              <td><code>#{{ req.id }}</code></td>
+              <td class="font-bold">
+                <span class="user-name">{{ req.username }}</span>
+              </td>
+              <td>
+                <span class="badge badge--role">
+                  {{ req.roleName || 'NOC_OPERATOR' }}
+                </span>
+              </td>
+              <td class="date-cell">{{ req.requestedAt | date: 'medium' }}</td>
+              <td>
+                <span class="status-badge status-badge--{{ req.status | lowercase }}">
+                  {{ req.status }}
+                </span>
+              </td>
+              <td class="notes-cell">
+                @if (req.rejectionReason) {
+                  <span class="reason-text" title="{{ req.rejectionReason }}">{{ req.rejectionReason }}</span>
+                } @else if (req.reviewedBy) {
+                  <span class="reviewer-tag">by {{ req.reviewedBy }}</span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+              <td class="text-right">
+                @if (req.status === 'PENDING') {
+                  <div class="action-buttons">
+                    <button
+                      class="btn-sm btn-success"
+                      [disabled]="processingId() === req.id"
+                      (click)="approve(req)"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      class="btn-sm btn-danger"
+                      [disabled]="processingId() === req.id"
+                      (click)="openRejectModal(req)"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                } @else {
+                  <span class="reviewed-label">Completed</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Reject Reason Modal -->
+  @if (rejectingRequest()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <h3>Reject Registration Request</h3>
+        <p>Provide a reason for rejecting the registration request for <strong>{{ rejectingRequest()?.username }}</strong>:</p>
+
+        <form [formGroup]="rejectForm" (ngSubmit)="submitReject()">
+          <label for="rejectReason">Rejection Reason</label>
+          <textarea
+            id="rejectReason"
+            formControlName="reason"
+            rows="3"
+            placeholder="e.g. Incomplete verification details or unauthorized identity"
+          ></textarea>
+          @if (rejectForm.controls.reason.invalid && rejectForm.controls.reason.touched) {
+            <p class="field-error">Reason is required (min 3 characters).</p>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="closeRejectModal()">Cancel</button>
+            <button type="submit" class="btn-danger" [disabled]="processingId() !== null">
+              {{ processingId() ? 'Rejecting…' : 'Confirm Rejection' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,537 @@
+<div class="dashboard content-container">
+  @if (auth.hasAnyRole('ADMIN')) {
+    <!-- ==================== 1. ADMIN COMMAND CENTER ==================== -->
+    <div class="dashboard__header section-header--left">
+      <div>
+        <span class="eyebrow">Governance & Overview</span>
+        <h2>System Administration Command Center</h2>
+        <p class="subtitle">System governance, account approvals, engineer fleet configuration, and operational analytics.</p>
+      </div>
+      <button class="btn-secondary" (click)="fetchAll()" [disabled]="loading()">↻ Refresh Metrics</button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-box">Loading administrative overview…</div>
+    } @else {
+      @if (summary(); as s) {
+        <!-- Admin Primary Governance KPIs -->
+        <div class="summary-cards">
+          <div class="summary-card summary-card--admin">
+            <span class="summary-card__label">Pending Register Approvals</span>
+            <span class="summary-card__value">{{ pendingApprovalsCount() || s.pendingRegistrationRequests || 0 }}</span>
+            <a routerLink="/registration-requests" class="card-action">Review Approvals →</a>
+          </div>
+
+          <div class="summary-card">
+            <span class="summary-card__label">Monitored Infrastructure</span>
+            <span class="summary-card__value">{{ s.totalDevices }}</span>
+            <a routerLink="/devices" class="card-action">View Devices →</a>
+          </div>
+
+          <div class="summary-card summary-card--alert">
+            <span class="summary-card__label">Active Telemetry Alarms</span>
+            <span class="summary-card__value">{{ s.activeAlarms }}</span>
+            <a routerLink="/alarms" class="card-action">Monitor Alarms →</a>
+          </div>
+
+          <div class="summary-card summary-card--warn">
+            <span class="summary-card__label">Open Incident Pipeline</span>
+            <span class="summary-card__value">{{ s.openIncidents }}</span>
+            <a routerLink="/incidents" class="card-action">Incident Queue →</a>
+          </div>
+        </div>
+      }
+
+      <!-- Admin Governance Action Hub — Blush Section Band with Centered Heading -->
+      <section class="section-band section-band--blush">
+        <div class="section-header section-header--center">
+          <span class="eyebrow">System Management</span>
+          <h2>Administrative Governance & Controls</h2>
+          <p class="subtitle">Core infrastructure management modules, automated routing rules, and security compliance records.</p>
+        </div>
+
+        <div class="admin-modules-grid">
+          <a routerLink="/registration-requests" class="admin-module-tile">
+            <div class="tile-icon">📝</div>
+            <div class="tile-content">
+              <h4>Register Approvals</h4>
+              <p>Review self-registration requests and activate NOC Operator or Engineer accounts.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+
+          <a routerLink="/admin/engineers" class="admin-module-tile">
+            <div class="tile-icon">👷</div>
+            <div class="tile-content">
+              <h4>Engineer Fleet Configuration</h4>
+              <p>Assign primary specializations and set active incident capacity limits.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+
+          <a routerLink="/admin/specializations" class="admin-module-tile">
+            <div class="tile-icon">🏷️</div>
+            <div class="tile-content">
+              <h4>Specialization Map</h4>
+              <p>Configure device-type to specialization matching rules for automated dispatch.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+
+          <a routerLink="/alarms/rules" class="admin-module-tile">
+            <div class="tile-icon">⚡</div>
+            <div class="tile-content">
+              <h4>Alarm Severity Rules</h4>
+              <p>Define automatic alarm priority and severity classifications.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+
+          <a routerLink="/admin/users" class="admin-module-tile">
+            <div class="tile-icon">👥</div>
+            <div class="tile-content">
+              <h4>User & Access Management</h4>
+              <p>Manage user accounts, roles, and administrative privileges.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+
+          <a routerLink="/admin/audit-logs" class="admin-module-tile">
+            <div class="tile-icon">📜</div>
+            <div class="tile-content">
+              <h4>Security Audit Logs</h4>
+              <p>Inspect tamper-evident system audit records and compliance logs.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+
+          <a routerLink="/reports" class="admin-module-tile">
+            <div class="tile-icon">📊</div>
+            <div class="tile-content">
+              <h4>Outage & Health Reports</h4>
+              <p>Access historical downtime reports, MTTR metrics, and SLA compliance analytics.</p>
+            </div>
+            <span class="tile-arrow">→</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- System-Wide Telemetry Charts -->
+      <div class="section-header section-header--left">
+        <span class="eyebrow">Real-Time Telemetry</span>
+        <h2>Operational Telemetry & Outage Analytics</h2>
+        <p class="subtitle">Real-time breakdown of telemetry alarms and incident tickets across severity levels and lifecycle stages.</p>
+      </div>
+
+      <!-- Dual Donut & Pie Charts Grid -->
+      <div class="dashboard__grid">
+        <!-- 1. Alarm Severity Pie / Donut Chart -->
+        <section class="card pie-card">
+          <div class="card__header-clean">
+            <div>
+              <span class="eyebrow">Telemetry Breakdown</span>
+              <h3>Alarms by Severity</h3>
+            </div>
+            <span class="pie-total-badge">{{ totalAlarmsCount() }} Total Alarms</span>
+          </div>
+
+          @if (severityPieSlices().length === 0) {
+            <div class="empty-box" style="padding: 2rem 1rem;">
+              <p class="muted">No alarm telemetry data at present.</p>
+            </div>
+          } @else {
+            <div class="pie-content-layout">
+              <!-- SVG Donut Chart -->
+              <div class="pie-chart-visual">
+                <svg viewBox="0 0 200 200" class="donut-svg">
+                  <!-- Background Track -->
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="65"
+                    fill="none"
+                    stroke="var(--color-bg-secondary)"
+                    stroke-width="26"
+                  />
+                  <!-- Colored Pie Slices -->
+                  <g transform="rotate(-90 100 100)">
+                    @for (slice of severityPieSlices(); track slice.label) {
+                      <circle
+                        cx="100"
+                        cy="100"
+                        r="65"
+                        fill="none"
+                        [attr.stroke]="slice.color"
+                        stroke-width="26"
+                        [attr.stroke-dasharray]="slice.strokeDasharray"
+                        [attr.stroke-dashoffset]="slice.strokeDashoffset"
+                        class="donut-segment"
+                        (mouseenter)="hoveredSlice.set(slice)"
+                        (mouseleave)="hoveredSlice.set(null)"
+                      />
+                    }
+                  </g>
+                </svg>
+                <!-- Center Metric Text -->
+                <div class="donut-center-info">
+                  @if (hoveredSlice(); as hs) {
+                    <span class="donut-center-val" [style.color]="hs.color">{{ hs.percentage }}%</span>
+                    <span class="donut-center-lbl">{{ hs.label }}</span>
+                  } @else {
+                    <span class="donut-center-val">{{ totalAlarmsCount() }}</span>
+                    <span class="donut-center-lbl">Active Alarms</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Segment Legend & Breakdown -->
+              <div class="pie-legend-list">
+                @for (slice of severityPieSlices(); track slice.label) {
+                  <div
+                    class="pie-legend-row"
+                    [class.pie-legend-row--active]="hoveredSlice()?.label === slice.label"
+                    (mouseenter)="hoveredSlice.set(slice)"
+                    (mouseleave)="hoveredSlice.set(null)"
+                  >
+                    <div class="legend-left">
+                      <span class="legend-swatch" [style.background-color]="slice.color"></span>
+                      <span class="legend-text">{{ slice.label }}</span>
+                    </div>
+                    <div class="legend-right">
+                      <span class="legend-num">{{ slice.value }}</span>
+                      <span class="legend-pct">({{ slice.percentage }}%)</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <span class="muted">Live telemetry stream active</span>
+              <a routerLink="/alarms">Inspect Alarms →</a>
+            </div>
+          }
+        </section>
+
+        <!-- 2. Incident Lifecycle Status Pie / Donut Chart -->
+        <section class="card pie-card">
+          <div class="card__header-clean">
+            <div>
+              <span class="eyebrow">Resolution Pipeline</span>
+              <h3>Incidents by Lifecycle Status</h3>
+            </div>
+            <span class="pie-total-badge">{{ totalIncidentsCount() }} Total Tickets</span>
+          </div>
+
+          @if (statusPieSlices().length === 0) {
+            <div class="empty-box" style="padding: 2rem 1rem;">
+              <p class="muted">No incident records found.</p>
+            </div>
+          } @else {
+            <div class="pie-content-layout">
+              <!-- SVG Donut Chart -->
+              <div class="pie-chart-visual">
+                <svg viewBox="0 0 200 200" class="donut-svg">
+                  <!-- Background Track -->
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="65"
+                    fill="none"
+                    stroke="var(--color-bg-secondary)"
+                    stroke-width="26"
+                  />
+                  <!-- Colored Pie Slices -->
+                  <g transform="rotate(-90 100 100)">
+                    @for (slice of statusPieSlices(); track slice.label) {
+                      <circle
+                        cx="100"
+                        cy="100"
+                        r="65"
+                        fill="none"
+                        [attr.stroke]="slice.color"
+                        stroke-width="26"
+                        [attr.stroke-dasharray]="slice.strokeDasharray"
+                        [attr.stroke-dashoffset]="slice.strokeDashoffset"
+                        class="donut-segment"
+                        (mouseenter)="hoveredSlice.set(slice)"
+                        (mouseleave)="hoveredSlice.set(null)"
+                      />
+                    }
+                  </g>
+                </svg>
+                <!-- Center Metric Text -->
+                <div class="donut-center-info">
+                  @if (hoveredSlice(); as hs) {
+                    <span class="donut-center-val" [style.color]="hs.color">{{ hs.percentage }}%</span>
+                    <span class="donut-center-lbl">{{ hs.label }}</span>
+                  } @else {
+                    <span class="donut-center-val">{{ totalIncidentsCount() }}</span>
+                    <span class="donut-center-lbl">Total Incidents</span>
+                  }
+                </div>
+              </div>
+
+              <!-- Segment Legend & Breakdown -->
+              <div class="pie-legend-list">
+                @for (slice of statusPieSlices(); track slice.label) {
+                  <div
+                    class="pie-legend-row"
+                    [class.pie-legend-row--active]="hoveredSlice()?.label === slice.label"
+                    (mouseenter)="hoveredSlice.set(slice)"
+                    (mouseleave)="hoveredSlice.set(null)"
+                  >
+                    <div class="legend-left">
+                      <span class="legend-swatch" [style.background-color]="slice.color"></span>
+                      <span class="legend-text">{{ slice.label }}</span>
+                    </div>
+                    <div class="legend-right">
+                      <span class="legend-num">{{ slice.value }}</span>
+                      <span class="legend-pct">({{ slice.percentage }}%)</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <span class="muted">Updated in real-time</span>
+              <a routerLink="/incidents">Inspect Queue →</a>
+            </div>
+          }
+        </section>
+      </div>
+    }
+  } @else if (auth.hasAnyRole('ENGINEER')) {
+    <!-- ==================== 2. ENGINEER WORKBENCH ==================== -->
+    <div class="dashboard__header">
+      <div>
+        <h2>Engineer Resolution Workbench</h2>
+        <p class="subtitle">Welcome back, <strong>{{ auth.currentUser()?.fullName || auth.currentUser()?.username }}</strong>. Review and resolve your assigned network incidents.</p>
+      </div>
+      <button class="btn-secondary" (click)="fetchAll()" [disabled]="loading()">↻ Refresh Worklist</button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-box">Loading your assigned incidents…</div>
+    } @else {
+      <!-- Engineer KPI Cards -->
+      <div class="summary-cards">
+        <div class="summary-card summary-card--alert">
+          <span class="summary-card__label">Active Tasks</span>
+          <span class="summary-card__value">{{ myActiveCount() }}</span>
+          <span class="summary-card__hint">Assigned & In-Progress</span>
+        </div>
+
+        <div class="summary-card summary-card--warn">
+          <span class="summary-card__label">In Progress</span>
+          <span class="summary-card__value">{{ myInProgressCount() }}</span>
+          <span class="summary-card__hint">Currently troubleshooting</span>
+        </div>
+
+        <div class="summary-card summary-card--success">
+          <span class="summary-card__label">Awaiting NOC Verification</span>
+          <span class="summary-card__value">{{ myResolvedCount() }}</span>
+          <span class="summary-card__hint">Resolved by you</span>
+        </div>
+
+        <div class="summary-card summary-card--spec">
+          <span class="summary-card__label">Primary Specialization</span>
+          <span class="summary-card__spec-name">{{ mySpecialization() }}</span>
+          <span class="summary-card__hint">Auto-dispatch routing target</span>
+        </div>
+      </div>
+
+      <!-- Engineer Worklist & Skills Grid -->
+      <div class="dashboard__grid">
+        <!-- Assigned Incident Queue -->
+        <section class="card queue-card">
+          <div class="card-header-flex">
+            <h3>My Assigned Incidents</h3>
+            <a routerLink="/incidents" class="link-btn">View All ({{ myIncidents().length }}) →</a>
+          </div>
+
+          @if (myOpenIncidents().length === 0) {
+            <div class="empty-box" style="padding: 2.5rem 1rem;">
+              <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">✓</div>
+              <h4>No Active Incidents</h4>
+              <p>You have no pending tasks assigned at this moment.</p>
+            </div>
+          } @else {
+            <div class="table-container" style="border: none; background: transparent;">
+              <table class="engineer-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Device</th>
+                    <th>Priority & SLA</th>
+                    <th>Status</th>
+                    <th class="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (inc of myOpenIncidents(); track inc.id) {
+                    <tr>
+                      <td class="font-bold">#{{ inc.id }}</td>
+                      <td><code>{{ inc.deviceId }}</code></td>
+                      <td>
+                        <span class="badge badge--p-{{ (inc.priority || 'p3') | lowercase }}">
+                          {{ inc.priority }}
+                          @if (inc.priority === 'P1') { (60m) }
+                          @else if (inc.priority === 'P2') { (4h) }
+                          @else if (inc.priority === 'P3') { (24h) }
+                          @else if (inc.priority === 'P4') { (48h) }
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge badge--status-{{ (inc.status || 'new') | lowercase }}">
+                          {{ inc.status }}
+                        </span>
+                      </td>
+                      <td class="text-right">
+                        <a [routerLink]="['/incidents', inc.id]" class="btn-sm btn-primary" style="text-decoration: none; display: inline-block;">
+                          Work on Incident →
+                        </a>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+
+        <!-- Secondary Skills & Profile Card -->
+        <section class="card skills-card">
+          <div class="card-header-flex">
+            <h3>My Secondary Skills</h3>
+            <a routerLink="/profile/skills" class="link-btn">Edit Skills →</a>
+          </div>
+          <p class="muted" style="margin-top: -0.5rem; margin-bottom: 1rem;">
+            Secondary skills allow the auto-assignment engine to dispatch matching incidents when primary specialists are unavailable.
+          </p>
+
+          <div class="skills-list">
+            @for (s of mySkills(); track s.id) {
+              <span class="skill-pill">🏷️ {{ s.skillName }}</span>
+            }
+            @if (mySkills().length === 0) {
+              <div class="no-skills-box">
+                <p>No secondary skills added yet.</p>
+                <a routerLink="/profile/skills" class="btn-sm btn-secondary" style="text-decoration: none; display: inline-block; margin-top: 0.5rem;">
+                  + Add Secondary Skills
+                </a>
+              </div>
+            }
+          </div>
+
+          <div class="card-footer" style="margin-top: 1.5rem;">
+            <a routerLink="/incidents">Browse Full Incident Queue →</a>
+            <a routerLink="/profile/skills">Skill Manager →</a>
+          </div>
+        </section>
+      </div>
+    }
+  } @else {
+    <!-- ==================== 3. NOC OPERATOR DASHBOARD ==================== -->
+    <div class="dashboard__header">
+      <div>
+        <h2>Network Operations Dashboard</h2>
+        <p class="subtitle">Real-time status overview and operational control center for NOC Pulse.</p>
+      </div>
+      <button class="btn-secondary" (click)="fetchAll()">↻ Refresh Metrics</button>
+    </div>
+
+    @if (summary(); as s) {
+      <!-- NOC KPI Summary Cards -->
+      <div class="summary-cards">
+        <div class="summary-card">
+          <span class="summary-card__label">Active Devices</span>
+          <span class="summary-card__value">{{ s.totalDevices }}</span>
+          <span class="summary-card__hint">Monitored infrastructure</span>
+        </div>
+
+        <div class="summary-card summary-card--alert">
+          <span class="summary-card__label">Active Alarms</span>
+          <span class="summary-card__value">{{ s.activeAlarms }}</span>
+          <span class="summary-card__hint">Live telemetry alerts</span>
+        </div>
+
+        <div class="summary-card summary-card--warn">
+          <span class="summary-card__label">Open Incidents</span>
+          <span class="summary-card__value">{{ s.openIncidents }}</span>
+          <span class="summary-card__hint">In resolution workflow</span>
+        </div>
+      </div>
+    } @else {
+      <div class="loading-box">Loading dashboard metrics…</div>
+    }
+
+    <!-- Chart Grid -->
+    <div class="dashboard__grid">
+      <section class="card">
+        <h3>Active Alarms by Severity</h3>
+        @if (orderedSeverityCounts().length === 0) {
+          <p class="muted">No alarm telemetry data at present.</p>
+        } @else {
+          <div class="bar-chart">
+            @for (entry of orderedSeverityCounts(); track entry.key) {
+              <div class="bar-row">
+                <span class="bar-row__label">{{ entry.key }}</span>
+                <div class="bar-row__track">
+                  <div
+                    class="bar-row__fill"
+                    [class]="'bar-row__fill--sev-' + (entry.key | lowercase)"
+                    [style.width.%]="barWidth(entry.value, orderedSeverityCounts())"
+                  ></div>
+                </div>
+                <span class="bar-row__value">{{ entry.value }}</span>
+              </div>
+            }
+          </div>
+          <div class="card-footer">
+            <span class="muted">Total Live: {{ alarmsBySeverity()?.total || 0 }}</span>
+            <a routerLink="/alarms">Go to Alarms →</a>
+          </div>
+        }
+      </section>
+
+      <section class="card">
+        <h3>Incidents by Lifecycle Status</h3>
+        @if (orderedStatusCounts().length === 0) {
+          <p class="muted">No incident records found.</p>
+        } @else {
+          <div class="bar-chart">
+            @for (entry of orderedStatusCounts(); track entry.key) {
+              <div class="bar-row">
+                <span class="bar-row__label">{{ entry.key }}</span>
+                <div class="bar-row__track">
+                  <div
+                    class="bar-row__fill"
+                    [class]="'bar-row__fill--status-' + (entry.key | lowercase)"
+                    [style.width.%]="barWidth(entry.value, orderedStatusCounts())"
+                  ></div>
+                </div>
+                <span class="bar-row__value">{{ entry.value }}</span>
+              </div>
+            }
+          </div>
+          <div class="card-footer">
+            <span class="muted">Total Tickets: {{ incidentsByStatus()?.total || 0 }}</span>
+            <a routerLink="/incidents">Go to Incident Queue →</a>
+          </div>
+        }
+      </section>
+    </div>
+
+    <!-- NOC Quick Actions Bar -->
+    <div class="quick-links-card">
+      <h3>Quick Navigation</h3>
+      <div class="quick-links">
+        <a routerLink="/devices" class="quick-btn">Device Inventory</a>
+        <a routerLink="/alarms" class="quick-btn">Raise / Monitor Alarms</a>
+        <a routerLink="/incidents" class="quick-btn">Verify Incidents</a>
+      </div>
+    </div>
+  }
+</div>

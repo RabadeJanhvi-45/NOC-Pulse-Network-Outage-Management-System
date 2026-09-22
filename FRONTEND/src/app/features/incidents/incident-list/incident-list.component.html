@@ -1,0 +1,122 @@
+<div class="incidents-page">
+  <div class="incidents-page__header">
+    <div>
+      <h2>Incidents Resolution Queue</h2>
+      <p class="subtitle">
+        @if (auth.hasAnyRole('ENGINEER')) {
+          Viewing incidents automatically assigned to you.
+        } @else {
+          Central monitoring and quality gate for all automated incident tickets.
+        }
+      </p>
+    </div>
+    <button class="btn-secondary" (click)="fetchIncidents()" [disabled]="loading()">
+      <svg viewBox="0 0 24 24" class="icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      <span>Refresh</span>
+    </button>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="filters-row">
+    <div class="filter-group">
+      <span class="filter-label">Status:</span>
+      <div class="filter-tabs">
+        @for (s of statusOptions; track s) {
+          <button
+            class="filter-tab"
+            [class.active]="statusFilter() === s"
+            (click)="setStatusFilter(s)"
+          >
+            {{ s }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Priority:</span>
+      <div class="filter-tabs">
+        @for (p of priorityOptions; track p) {
+          <button
+            class="filter-tab"
+            [class.active]="(priorityFilter() || 'All') === p"
+            (click)="setPriorityFilter(p === 'All' ? '' : p)"
+          >
+            {{ p }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">Loading incidents…</div>
+  } @else if (incidents().length === 0) {
+    <div class="empty-box">
+      <svg viewBox="0 0 24 24" class="icon icon-xl empty-icon" style="color: var(--color-success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h3>No Incidents Found</h3>
+      <p>No active incidents match the current filters.</p>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="incidents-table">
+        <thead>
+          <tr>
+            <th>Incident ID</th>
+            <th>Device ID</th>
+            <th>Description</th>
+            <th>Priority & SLA</th>
+            <th>Status</th>
+            <th>Assigned Engineer</th>
+            <th>Raised By</th>
+            <th>Created</th>
+            <th>Closed</th>
+            <th class="text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (incident of incidents(); track incident.id) {
+            <tr class="clickable" (click)="openIncident(incident)">
+              <td class="font-bold">#{{ incident.id }}</td>
+              <td><code>{{ incident.deviceId }}</code></td>
+              <td>{{ incident.description || 'Auto-generated from Alarm' }}</td>
+              <td>
+                <span class="badge badge--p-{{ (incident.priority || 'p3') | lowercase }}">
+                  {{ incident.priority }}
+                  @if (incident.priority === 'P1') { (60m) }
+                  @else if (incident.priority === 'P2') { (4h) }
+                  @else if (incident.priority === 'P3') { (24h) }
+                  @else if (incident.priority === 'P4') { (48h) }
+                </span>
+              </td>
+              <td>
+                <span class="badge badge--status-{{ (incident.status || 'new') | lowercase }}">
+                  {{ incident.status }}
+                </span>
+              </td>
+              <td>
+                @if (incident.assignedEngineer && incident.assignedEngineer !== 'Unassigned') {
+                  <span class="engineer-pill">
+                    <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span>{{ incident.assignedEngineer }}</span>
+                  </span>
+                } @else {
+                  <span class="muted" style="font-style: italic; font-size: 0.82rem;">Unassigned</span>
+                }
+              </td>
+              <td><code>{{ incident.createdBy || 'system' }}</code></td>
+              <td>{{ incident.createdAt | date: 'medium' }}</td>
+              <td>{{ incident.closedAt ? (incident.closedAt | date: 'medium') : '—' }}</td>
+              <td class="text-right">
+                <button class="btn-sm btn-primary" (click)="$event.stopPropagation(); openIncident(incident)">
+                  View Workspace →
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+

@@ -1,0 +1,110 @@
+<div class="page-container">
+  <div class="page-header">
+    <div>
+      <h2>Device Registration & Change Requests</h2>
+      <p class="subtitle">Review, approve or reject device creation and critical modification requests.</p>
+    </div>
+    <button class="btn-secondary" (click)="fetchRequests()" [disabled]="loading()">
+      <svg viewBox="0 0 24 24" class="icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+      <span>Refresh</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">Loading device requests…</div>
+  } @else if (requests().length === 0) {
+    <div class="empty-card">
+      <svg viewBox="0 0 24 24" class="icon icon-xl empty-icon" style="color: var(--color-success);"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h3>No Pending Device Requests</h3>
+      <p>All device registration and change requests have been processed.</p>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Device ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>IP Address</th>
+            <th>Location / Region</th>
+            <th>Status</th>
+            <th>Requested By</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (req of requests(); track req.id) {
+            <tr>
+              <td>#{{ req.id }}</td>
+              <td class="font-bold">{{ req.deviceId }}</td>
+              <td>{{ req.name }}</td>
+              <td>{{ req.deviceType }}</td>
+              <td><code>{{ req.ipAddress || '—' }}</code></td>
+              <td>{{ req.location || '—' }} ({{ req.region || '—' }})</td>
+              <td>
+                <span class="status-badge status-badge--{{ (req.status || 'PENDING') | lowercase }}">
+                  {{ req.status || 'PENDING' }}
+                </span>
+              </td>
+              <td>{{ req.requestedBy || 'NOC Operator' }}</td>
+              <td class="text-right">
+                @if (req.status === 'PENDING' || !req.status) {
+                  <div class="action-buttons">
+                    <button
+                      class="btn-sm btn-success"
+                      [disabled]="processingId() === req.id"
+                      (click)="approve(req)"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      class="btn-sm btn-danger"
+                      [disabled]="processingId() === req.id"
+                      (click)="openRejectModal(req)"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                } @else {
+                  <span class="reviewed-label">Completed</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Reject Reason Modal -->
+  @if (rejectingRequest()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <h3>Reject Device Request</h3>
+        <p>Provide a reason for rejecting the request for <strong>{{ rejectingRequest()?.deviceId }}</strong>:</p>
+
+        <form [formGroup]="rejectForm" (ngSubmit)="submitReject()">
+          <label for="deviceRejectReason">Rejection Reason</label>
+          <textarea
+            id="deviceRejectReason"
+            formControlName="reason"
+            rows="3"
+            placeholder="e.g. Duplicate IP address or invalid device configuration"
+          ></textarea>
+          @if (rejectForm.controls.reason.invalid && rejectForm.controls.reason.touched) {
+            <p class="field-error">Reason is required (min 3 characters).</p>
+          }
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="closeRejectModal()">Cancel</button>
+            <button type="submit" class="btn-danger" [disabled]="processingId() !== null">
+              {{ processingId() ? 'Rejecting…' : 'Confirm Rejection' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

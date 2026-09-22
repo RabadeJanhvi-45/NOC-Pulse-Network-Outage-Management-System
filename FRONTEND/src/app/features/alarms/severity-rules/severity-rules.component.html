@@ -1,0 +1,91 @@
+<div class="rules-page">
+  <div class="rules-page__header">
+    <div>
+      <h2>Severity Classification Rules</h2>
+      <p class="subtitle">Configure automatic severity scoring and priority classification based on telemetry alarm types.</p>
+    </div>
+    <button class="btn-primary" (click)="openForm()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add Rule</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading rules…</p>
+    </div>
+  } @else if (rules().length === 0) {
+    <div class="empty-box">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <h3>No severity rules configured</h3>
+      <p>Alarms without a matching rule default to Warning severity.</p>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="rules-table">
+        <thead>
+          <tr>
+            <th>Alarm Type</th>
+            <th>Severity Target</th>
+            <th>Condition Logic</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (rule of rules(); track rule.id) {
+            <tr>
+              <td class="font-bold"><code>{{ rule.alarmType }}</code></td>
+              <td><span class="badge" [class]="'badge--sev-' + rule.severity.toLowerCase()">{{ rule.severity }}</span></td>
+              <td>{{ rule.conditionLogic || '—' }}</td>
+              <td class="text-right">
+                <div class="btn-group">
+                  <button type="button" class="btn-sm btn-secondary" (click)="openForm(rule)" title="Edit rule">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Edit</span>
+                  </button>
+                  <button type="button" class="btn-sm btn-danger" (click)="deleteRule(rule)" title="Delete rule">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (showForm()) {
+  <div class="modal-backdrop" (click)="cancelForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>{{ editingRule() ? 'Edit' : 'Add' }} Severity Rule</h3>
+      <p class="subtitle">Define matching criteria and automatic severity classification for incoming alarm events.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <label for="ruleAlarmType">Alarm Type</label>
+        <input id="ruleAlarmType" type="text" formControlName="alarmType" placeholder="e.g. INTERFACE_DOWN, HIGH_CPU_UTILIZATION, BGP_SESSION_DOWN" />
+
+        <label for="ruleSeverity">Target Severity</label>
+        <select id="ruleSeverity" formControlName="severity">
+          @for (s of severityOptions; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+
+        <label for="ruleConditionLogic">Condition Logic <span class="muted" style="text-transform: none;">(optional expression)</span></label>
+        <input id="ruleConditionLogic" type="text" formControlName="conditionLogic" placeholder="e.g. CPU > 90% for > 5m or packet_loss > 15%" />
+
+        <div class="modal__actions">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>{{ isSubmitting() ? 'Saving…' : 'Save Rule' }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

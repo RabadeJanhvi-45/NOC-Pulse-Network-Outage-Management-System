@@ -1,0 +1,454 @@
+<div class="devices-page content-container">
+  <!-- 1. Header Section (Left Aligned) -->
+  <div class="devices-page__header section-header--left">
+    <div>
+      <span class="eyebrow">Fleet Management</span>
+      <h2>Device Inventory</h2>
+      <p class="subtitle">Monitor infrastructure health, manage operational settings and track changes across all physical nodes.</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="view-toggle-group">
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.toggle-btn--active]="viewMode() === 'grid'"
+          (click)="setViewMode('grid')"
+          title="Hardware Grid Cards View"
+        >
+          <svg viewBox="0 0 24 24" class="icon"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Grid</span>
+        </button>
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.toggle-btn--active]="viewMode() === 'table'"
+          (click)="setViewMode('table')"
+          title="Tabular List View"
+        >
+          <svg viewBox="0 0 24 24" class="icon"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          <span>Table</span>
+        </button>
+      </div>
+
+      @if (auth.hasAnyRole('ADMIN', 'NOC_OPERATOR')) {
+        <button class="btn-primary" (click)="openAddForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Register Device</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- 2. Fleet Analytics & Metrics — Blush Section Band with Halo Accent Circle -->
+  <section class="section-band section-band--blush relative-canvas">
+    <div class="halo-accent-circle halo-accent-circle--lg halo-accent-circle--double" style="top: -80px; right: -60px;"></div>
+    <div class="halo-accent-circle halo-accent-circle--md" style="bottom: -50px; left: -40px;"></div>
+
+    <div class="device-analytics-grid grid-asymmetric-wide-right" style="position: relative; z-index: 1;">
+      <!-- Card 1: Health & Availability Gauge (Narrow Column) -->
+      <div class="analytics-card">
+        <div class="analytics-card__header">
+          <div>
+            <span class="eyebrow">Live Telemetry</span>
+            <h3>Fleet Readiness</h3>
+            <span class="analytics-subtitle">{{ healthStats().total }} monitored physical nodes</span>
+          </div>
+          <div class="rate-badge">
+            <span class="rate-val">{{ activeRate() }}%</span>
+            <span class="rate-lbl">Active Rate</span>
+          </div>
+        </div>
+
+        <div class="multi-progress-track">
+          <div class="seg seg--healthy" [style.width.%]="healthStats().healthyPct" title="Healthy: {{ healthStats().healthy }} ({{ healthStats().healthyPct }}%)"></div>
+          <div class="seg seg--degraded" [style.width.%]="healthStats().degradedPct" title="Degraded: {{ healthStats().degraded }} ({{ healthStats().degradedPct }}%)"></div>
+          <div class="seg seg--critical" [style.width.%]="healthStats().criticalPct" title="Critical: {{ healthStats().critical }} ({{ healthStats().criticalPct }}%)"></div>
+        </div>
+
+        <div class="health-legend">
+          <div class="legend-item">
+            <span class="dot dot--healthy"></span>
+            <span class="name">Healthy</span>
+            <strong class="count">{{ healthStats().healthy }}</strong>
+            <span class="pct">({{ healthStats().healthyPct }}%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="dot dot--degraded"></span>
+            <span class="name">Degraded</span>
+            <strong class="count">{{ healthStats().degraded }}</strong>
+            <span class="pct">({{ healthStats().degradedPct }}%)</span>
+          </div>
+          <div class="legend-item">
+            <span class="dot dot--critical"></span>
+            <span class="name">Critical</span>
+            <strong class="count">{{ healthStats().critical }}</strong>
+            <span class="pct">({{ healthStats().criticalPct }}%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Device Type Distribution Breakdown (Wide Column) -->
+      <div class="analytics-card">
+        <div class="analytics-card__header">
+          <div>
+            <span class="eyebrow">Classification</span>
+            <h3>Hardware Distribution</h3>
+            <span class="analytics-subtitle">Categorized network architecture inventory</span>
+          </div>
+          <span class="count-chip">{{ typeStats().length }} Types</span>
+        </div>
+
+        <div class="type-distribution-list">
+          @for (item of typeStats(); track item.type) {
+            <div class="type-dist-row">
+              <div class="type-meta-wrap">
+                <div class="type-img-thumb">
+                  <img [src]="getDeviceImage(item.type)" [alt]="item.type" class="type-mini-thumb" />
+                </div>
+                <span class="type-name">{{ item.type }}</span>
+              </div>
+              <div class="dist-track">
+                <div class="dist-fill" [style.width.%]="item.percent"></div>
+              </div>
+              <div class="dist-val">
+                <strong>{{ item.count }}</strong>
+                <span class="pct">({{ item.percent }}%)</span>
+              </div>
+            </div>
+          }
+          @if (typeStats().length === 0) {
+            <p class="muted">No device data available.</p>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Section Title with Alignment Shift (Centered Title for Appliances) -->
+  <div class="section-header section-header--center">
+    <span class="eyebrow">Portfolio & Hardware Specs</span>
+    <h2>Monitored Hardware Appliances</h2>
+    <p class="subtitle">Explore active routing, switching, security firewalls, and application delivery nodes.</p>
+  </div>
+
+  <!-- Filter Toolbar (White Card on Base Ivory) -->
+  <div class="filter-card">
+    <form [formGroup]="filterForm" (ngSubmit)="fetchDevices()" class="filter-grid">
+      <div class="filter-item filter-item--search">
+        <label for="searchFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Search Inventory</span>
+        </label>
+        <div class="input-with-icon">
+          <input id="searchFilter" type="text" formControlName="search" placeholder="Search by device ID, hostname, IP…" />
+          <svg viewBox="0 0 24 24" class="input-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <label for="typeFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+          <span>Device Type</span>
+        </label>
+        <select id="typeFilter" formControlName="deviceType">
+          <option value="">All Types</option>
+          @for (t of deviceTypeOptions; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="statusFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>Status</span>
+        </label>
+        <select id="statusFilter" formControlName="status">
+          <option value="">All Statuses</option>
+          @for (s of statusOptions; track s) {
+            <option [value]="s">{{ s }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="regionFilter">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+          <span>Region</span>
+        </label>
+        <div class="input-with-icon">
+          <input id="regionFilter" type="text" formControlName="region" placeholder="e.g. US-East, North" />
+          <svg viewBox="0 0 24 24" class="input-icon"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="submit" class="btn-primary" [disabled]="loading()">
+          <svg viewBox="0 0 24 24" class="icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Filter</span>
+        </button>
+        <button type="button" class="btn-secondary" (click)="resetFilters()" [disabled]="loading()">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Reset</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading devices…</p>
+    </div>
+  } @else if (devices().length === 0) {
+    <div class="empty-box">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+      <h3>No devices found</h3>
+      <p>Try adjusting your search criteria or register a new device.</p>
+    </div>
+  } @else if (viewMode() === 'grid') {
+    <!-- ==================== 1. HARDWARE GRID CARDS VIEW ==================== -->
+    <div class="hardware-cards-grid">
+      @for (device of devices(); track device.id) {
+        <div class="hardware-card">
+          <!-- 16:9 Clean Device Image Banner without background frames -->
+          <div class="hardware-card__banner">
+            <img
+              [src]="getDeviceImage(device.deviceType)"
+              [alt]="device.deviceType"
+              class="hardware-card__img"
+              loading="lazy"
+            />
+            <div class="hardware-card__overlay">
+              <span class="badge" [class]="'badge--status-' + (device.status | lowercase)">
+                {{ device.status }}
+              </span>
+              <span class="badge" [class]="'badge--health-' + (device.health | lowercase)">
+                {{ device.health }}
+              </span>
+            </div>
+          </div>
+
+          <div class="hardware-card__body">
+            <div class="hardware-card__header-meta">
+              <code>{{ device.deviceId }}</code>
+              <span class="type-pill">{{ device.deviceType }}</span>
+            </div>
+
+            <h4 class="hardware-card__title">{{ device.name }}</h4>
+
+            <div class="hardware-card__specs">
+              <div class="spec-row">
+                <span class="spec-label">IP Address</span>
+                <code class="spec-val">{{ device.ipAddress || '—' }}</code>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Location</span>
+                <span class="spec-val">{{ device.location || '—' }}</span>
+              </div>
+              <div class="spec-row">
+                <span class="spec-label">Region</span>
+                <span class="spec-val">{{ device.region || '—' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hardware-card__footer">
+            <div class="card-action-group">
+              @if (auth.hasAnyRole('ADMIN', 'NOC_OPERATOR')) {
+                <button type="button" class="btn-sm btn-secondary" (click)="openEditForm(device)" title="Edit device details">
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <span>Edit</span>
+                </button>
+              }
+              @if (auth.hasAnyRole('ADMIN', 'NOC_OPERATOR')) {
+                <button type="button" class="btn-sm btn-danger" (click)="confirmDelete(device)" title="Delete device">
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <span>Delete</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <!-- ==================== 2. TABULAR LIST VIEW ==================== -->
+    <div class="table-container">
+      <table class="devices-table">
+        <thead>
+          <tr>
+            <th>Hardware Asset</th>
+            <th>Device Name</th>
+            <th>IP Address</th>
+            <th>Location</th>
+            <th>Region</th>
+            <th>Status</th>
+            <th>Health</th>
+            <th>Created By</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (device of devices(); track device.id) {
+            <tr>
+              <td class="font-bold">
+                <div class="device-id-cell">
+                  <div class="device-photo-wrap">
+                    <img
+                      [src]="getDeviceImage(device.deviceType)"
+                      [alt]="device.deviceType"
+                      class="device-photo-thumb"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="device-node-info">
+                    <code>{{ device.deviceId }}</code>
+                    <span class="device-type-micro">{{ device.deviceType }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span class="device-name-primary">{{ device.name }}</span>
+              </td>
+              <td><code>{{ device.ipAddress || '—' }}</code></td>
+              <td>{{ device.location || '—' }}</td>
+              <td>{{ device.region || '—' }}</td>
+              <td>
+                <span class="badge" [class]="'badge--status-' + (device.status | lowercase)">
+                  {{ device.status }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="'badge--health-' + (device.health | lowercase)">
+                  {{ device.health }}
+                </span>
+              </td>
+              <td><code>{{ device.createdBy || 'system' }}</code></td>
+              <td class="text-right">
+                <div class="btn-group">
+                  @if (auth.hasAnyRole('ADMIN', 'NOC_OPERATOR')) {
+                    <button type="button" class="btn-sm btn-secondary" (click)="openEditForm(device)" title="Edit device details">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      <span>Edit</span>
+                    </button>
+                  }
+                  @if (auth.hasAnyRole('ADMIN', 'NOC_OPERATOR')) {
+                    <button type="button" class="btn-sm btn-danger" (click)="confirmDelete(device)" title="Delete device">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      <span>Delete</span>
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+<!-- Register / Edit Device Modal -->
+@if (showForm()) {
+  <div class="modal-backdrop" (click)="cancelForm()">
+    <div class="modal" style="max-width: 620px;" (click)="$event.stopPropagation()">
+      <h3>{{ editingDevice() ? 'Edit Device' : 'Register Device' }}</h3>
+      <p class="subtitle">{{ editingDevice() ? 'Update operational parameters and configuration for this network node.' : 'Onboard a new physical or virtual network asset into inventory.' }}</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="form-grid-2col">
+          <div>
+            <label for="devId">Device ID</label>
+            <input id="devId" type="text" formControlName="deviceId" [readonly]="!!editingDevice()" placeholder="e.g. RTR-CORE-01" />
+          </div>
+
+          <div>
+            <label for="devName">Device Name</label>
+            <input id="devName" type="text" formControlName="name" placeholder="e.g. Core Router East" />
+          </div>
+
+          <div>
+            <label for="devType">Device Type</label>
+            <select id="devType" formControlName="deviceType">
+              <option value="" disabled>Select device type / category</option>
+              @for (t of deviceTypeOptions; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label for="devIp">IP Address</label>
+            <input id="devIp" type="text" formControlName="ipAddress" placeholder="e.g. 10.10.1.1" />
+          </div>
+
+          <div>
+            <label for="devLoc">Location</label>
+            <input id="devLoc" type="text" formControlName="location" placeholder="e.g. Datacenter Alpha" />
+          </div>
+
+          <div>
+            <label for="devReg">Region</label>
+            <input id="devReg" type="text" formControlName="region" placeholder="e.g. US-East, APAC" />
+          </div>
+
+          <div>
+            <label for="devStatus">Operational Status</label>
+            <select id="devStatus" formControlName="status">
+              @for (s of statusOptions; track s) {
+                <option [value]="s">{{ s }}</option>
+              }
+            </select>
+          </div>
+
+          <div>
+            <label for="devHealth">Health Indicator</label>
+            <select id="devHealth" formControlName="health">
+              @for (h of healthOptions; track h) {
+                <option [value]="h">{{ h }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="modal__actions">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span>{{ isSubmitting() ? 'Saving…' : (editingDevice() ? 'Update Device' : 'Register Device') }}</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Device History Modal -->
+@if (historyFor(); as device) {
+  <div class="modal-backdrop" (click)="closeHistory()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>Change History — {{ device.name }} ({{ device.deviceId }})</h3>
+
+      @if (historyLoading()) {
+        <p class="muted">Loading history…</p>
+      } @else if (history().length === 0) {
+        <p class="muted">No history recorded for this device.</p>
+      } @else {
+        <ul class="history-list">
+          @for (h of history(); track h.id) {
+            <li>
+              <strong>{{ h.changedField }}</strong>: {{ h.oldValue || '—' }} → {{ h.newValue || '—' }}
+              <span class="muted">({{ h.changedBy || 'system' }}, {{ h.changedAt | date: 'medium' }})</span>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="modal__actions">
+        <button type="button" class="btn-secondary" (click)="closeHistory()">Close</button>
+      </div>
+    </div>
+  </div>
+}

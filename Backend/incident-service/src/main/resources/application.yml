@@ -1,0 +1,61 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: incident-service
+  datasource:
+    url: jdbc:h2:file:./data/incidentdb;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# incident-service calls device-service and auth-service via Feign resolved
+# through Eureka by application name.
+feign:
+  client:
+    config:
+      device-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+      auth-service:
+        connectTimeout: 3000
+        readTimeout: 3000
+
+# Default SLA thresholds (minutes) applied per priority when an incident is
+# created, unless overridden per-incident. Also drives the scheduled
+# SLA-breach scan below.
+incident:
+  sla:
+    p1-minutes: 60
+    p2-minutes: 240
+    p3-minutes: 1440
+    p4-minutes: 2880
+  sla-scan:
+    fixed-delay-ms: 300000   # 5 minutes
+  unassigned-retry:
+    fixed-delay-ms: 120000   # 2 minutes
+
+jwt:
+  secret: dev-only-change-me-network-outage-dashboard-auth-service-secret-key-2024
+  issuer: auth-service
+
+logging:
+  level:
+    com.noc.incidentservice: INFO

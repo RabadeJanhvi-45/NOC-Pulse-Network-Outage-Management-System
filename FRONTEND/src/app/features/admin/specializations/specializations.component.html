@@ -1,0 +1,92 @@
+<div class="admin-page-wrap">
+  <div class="admin-page-header">
+    <div>
+      <span class="eyebrow">Routing Rules</span>
+      <h2>Device Specialization Map</h2>
+      <p class="subtitle">Define required engineer specializations for automatic assignment by device type.</p>
+    </div>
+    <button class="btn-primary btn-sm" (click)="openAdd()">
+      <svg viewBox="0 0 24 24" class="icon icon-sm"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Add Mapping</span>
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading specialization mappings…</p>
+    </div>
+  } @else if (mappings().length === 0) {
+    <div class="empty-card">
+      <svg viewBox="0 0 24 24" class="icon icon-lg empty-icon" style="color: var(--color-text-muted); margin-bottom: 8px;"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      <h3>No Specialization Mappings Configured</h3>
+      <p>Add a mapping to direct alarms and incidents to qualified engineers.</p>
+    </div>
+  } @else {
+    <div class="table-responsive-card">
+      <table class="compact-table">
+        <thead>
+          <tr>
+            <th style="width: 75px;">ID</th>
+            <th>Device Type</th>
+            <th>Required Specialization</th>
+            <th class="text-right" style="width: 140px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of mappings(); track m.id) {
+            <tr>
+              <td><code>#{{ m.id }}</code></td>
+              <td class="font-bold">{{ m.deviceType }}</td>
+              <td><span class="spec-tag">{{ m.requiredSpecialization }}</span></td>
+              <td class="text-right">
+                <div class="btn-group">
+                  <button type="button" class="btn-sm btn-secondary" (click)="openEdit(m)" title="Edit mapping">
+                    <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    <span>Edit</span>
+                  </button>
+                  <button type="button" class="btn-sm btn-danger" (click)="deleteMapping(m)" title="Delete mapping">
+                    <svg viewBox="0 0 24 24" class="icon icon-sm"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    <span>Delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (showForm()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <h3>{{ editingMapping() ? 'Edit' : 'Add' }} Specialization Mapping</h3>
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <label for="specDeviceType">Device Type</label>
+          <input
+            id="specDeviceType"
+            type="text"
+            formControlName="deviceType"
+            placeholder="e.g. Router, Switch, Firewall"
+          />
+
+          <label for="requiredSpec">Required Engineer Specialization</label>
+          <input
+            id="requiredSpec"
+            type="text"
+            formControlName="requiredSpecialization"
+            placeholder="e.g. Routing & Switching, Security"
+          />
+
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" (click)="closeForm()">Cancel</button>
+            <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+              {{ isSubmitting() ? 'Saving…' : 'Save Mapping' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

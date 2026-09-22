@@ -1,0 +1,60 @@
+<div class="admin-page">
+  <div class="admin-page__header">
+    <div>
+      <h2>System Roles & Access Matrix</h2>
+      <p class="subtitle">NOC Pulse utilizes 3 core system roles with pre-configured access levels and workflow permissions.</p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">Loading roles…</div>
+  } @else if (roles().length === 0) {
+    <div class="empty-box">No system roles configured.</div>
+  } @else {
+    <div class="role-grid">
+      @for (role of roles(); track role.id) {
+        <div class="role-card">
+          <div class="role-card__header">
+            <span class="badge badge--{{ role.name.toLowerCase() }}">{{ role.name }}</span>
+            <span class="role-id">ID: #{{ role.id }}</span>
+          </div>
+
+          <h3 class="role-title">{{ role.name }}</h3>
+          <p class="role-desc">{{ role.description || 'System role for NOC Pulse platform.' }}</p>
+
+          <div class="role-capabilities">
+            <h4>Key Capabilities</h4>
+            @if (role.name === 'ADMIN') {
+              <ul>
+                <li>User management & role assignments</li>
+                <li>NOC Operator registration approvals & rejections</li>
+                <li>Device registration approvals & rejections</li>
+                <li>Device Type to Specialization mapping</li>
+                <li>Engineer primary specialization configuration</li>
+                <li>System-wide audit log inspection & reporting</li>
+              </ul>
+            } @else if (role.name === 'NOC_OPERATOR') {
+              <ul>
+                <li>Request new device registrations</li>
+                <li>Update operational device parameters</li>
+                <li>Raise telemetry alarms against active devices</li>
+                <li>Monitor live incidents and SLA compliance</li>
+                <li>Quality gate: Verify & Close or Reject resolutions</li>
+                <li>Generate and download network outage reports</li>
+              </ul>
+            } @else if (role.name === 'ENGINEER') {
+              <ul>
+                <li>Automated matching to incidents by specialization</li>
+                <li>Start work and transition incidents to IN_PROGRESS</li>
+                <li>Record technical progress notes on tickets</li>
+                <li>Resolve incidents with root cause & steps</li>
+                <li>Reject mismatched assignments with stated reasons</li>
+                <li>Self-service secondary skills management (max 3)</li>
+              </ul>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

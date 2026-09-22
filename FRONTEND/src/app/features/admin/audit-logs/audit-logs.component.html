@@ -1,0 +1,111 @@
+<div class="admin-page">
+  <div class="admin-page__header">
+    <div>
+      <h2>System Audit Trail</h2>
+      <p class="subtitle">Immutable security and operational activity log across all authentication, device, alarm, and incident services.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="fetchLogs()" [disabled]="loading()">
+        <svg viewBox="0 0 24 24" class="icon"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="filter-card">
+    <form [formGroup]="filterForm" class="filter-grid">
+      <div class="filter-item filter-item--search">
+        <label for="auditSearch">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Search Audit Trail</span>
+        </label>
+        <div class="input-with-icon">
+          <input id="auditSearch" type="text" formControlName="search" placeholder="Search keywords, details payload, IP address, user, or action…" />
+          <svg viewBox="0 0 24 24" class="input-icon"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <label for="auditAction">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Event Action</span>
+        </label>
+        <select id="auditAction" formControlName="action">
+          <option value="">All Actions</option>
+          @for (act of standardActions; track act) {
+            <option [value]="act">{{ act }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label for="auditUser">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Actor / Username</span>
+        </label>
+        <div class="input-with-icon">
+          <input id="auditUser" type="text" formControlName="username" placeholder="e.g. admin, operator1…" />
+          <svg viewBox="0 0 24 24" class="input-icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+      </div>
+
+      <div class="filter-actions">
+        <button type="button" class="btn-secondary" (click)="resetFilters()" [disabled]="loading()">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          <span>Reset</span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-box">
+      <div class="loading-spinner"></div>
+      <p>Loading audit trail…</p>
+    </div>
+  } @else if (filteredLogs().length === 0) {
+    <div class="empty-box">
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <h3>No audit log entries found</h3>
+      <p>No activity logs match your current search criteria.</p>
+    </div>
+  } @else {
+    <div class="table-container">
+      <div class="table-top-summary">
+        <span class="count-chip">Showing {{ filteredLogs().length }} of {{ logs().length }} total events</span>
+      </div>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Details</th>
+            <th>IP Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of filteredLogs(); track log.id) {
+            <tr>
+              <td><span class="time-stamp">{{ log.createdAt | date: 'medium' }}</span></td>
+              <td class="font-bold">
+                <span class="user-chip">
+                  <svg viewBox="0 0 24 24" class="icon icon-sm"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span>{{ log.username }}</span>
+                </span>
+              </td>
+              <td>
+                <span class="action-tag" [class]="'action-tag--' + ((log.action || '').toLowerCase())">
+                  {{ log.action }}
+                </span>
+              </td>
+              <td class="details-cell">{{ log.details || '—' }}</td>
+              <td><code>{{ log.ipAddress || '—' }}</code></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

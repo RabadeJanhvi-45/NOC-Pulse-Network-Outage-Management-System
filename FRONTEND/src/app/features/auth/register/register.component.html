@@ -1,0 +1,102 @@
+<div class="auth-screen">
+  <aside class="auth-hero">
+    <div class="auth-hero__brand">
+      <span class="auth-hero__logo">◎</span>
+      <div>
+        <h1>NOC PULSE</h1>
+        <p>Network Operations Center</p>
+      </div>
+    </div>
+
+    <div class="auth-hero__copy">
+      <h2>Operator <span>Registration</span></h2>
+      <p>Self-register for a NOC Operator account. Requests require administrator approval prior to activation.</p>
+    </div>
+  </aside>
+
+  <section class="auth-form">
+    <div class="auth-form__card">
+      @if (isSubmitted()) {
+        <div class="success-state">
+          <div class="success-badge">⏳ Request Submitted</div>
+          <h2>Pending Approval</h2>
+          <p>Your NOC Operator registration request has been submitted. An Administrator must review and approve your account before you can sign in.</p>
+          <button type="button" class="btn-primary" (click)="goToLogin()">Back to Sign In</button>
+        </div>
+      } @else {
+        <h2>Create NOC Account</h2>
+        <p class="auth-form__subtitle">Enter your details to request NOC Operator access.</p>
+
+        <form [formGroup]="form" (ngSubmit)="submit()">
+          <label for="fullName">Full Name</label>
+          <input
+            id="fullName"
+            type="text"
+            formControlName="fullName"
+            placeholder="e.g. John Doe"
+          />
+          @if (form.controls.fullName.invalid && form.controls.fullName.touched) {
+            <p class="field-error">Full name is required.</p>
+          }
+
+          <label for="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            placeholder="e.g. noc_john"
+            autocomplete="username"
+          />
+          @if (form.controls.username.invalid && form.controls.username.touched) {
+            <p class="field-error">Valid username (at least 3 characters) is required.</p>
+          }
+
+          <label for="email">Email Address</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="john@nocpulse.com"
+            autocomplete="email"
+          />
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <p class="field-error">Valid email address is required.</p>
+          }
+
+          <label for="password">Password</label>
+          <div class="password-field">
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              placeholder="Create a strong password"
+              autocomplete="new-password"
+            />
+            <button type="button" class="password-toggle" (click)="togglePasswordVisibility()">
+              {{ showPassword() ? 'Hide' : 'Show' }}
+            </button>
+          </div>
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <p class="field-error">Password must be at least 6 characters.</p>
+          }
+
+          @if (errorMessage()) {
+            <div class="field-error" style="margin-top: 0.75rem; padding: 0.6rem 0.8rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 6px; color: #fca5a5; font-size: 0.85rem;">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <button type="submit" class="btn-primary" [disabled]="isSubmitting()">
+            {{ isSubmitting() ? 'Submitting Request…' : 'Submit Registration' }}
+          </button>
+
+          <div class="auth-form__footer">
+            Registering as Network Engineer instead? <a routerLink="/register-engineer">Register here</a>
+            <br />
+            Already have an account? <a routerLink="/login">Sign in</a>
+          </div>
+        </form>
+      }
+    </div>
+  </section>
+</div>

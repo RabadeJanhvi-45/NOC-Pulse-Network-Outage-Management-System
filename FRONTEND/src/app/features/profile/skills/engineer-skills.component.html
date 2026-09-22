@@ -1,0 +1,105 @@
+<div class="skills-page-wrap">
+  <div class="admin-page-header">
+    <div>
+      <span class="eyebrow">Engineer Workbench</span>
+      <h2>Engineer Profile & Skills</h2>
+      <p class="subtitle">Manage secondary competencies used by the automated routing engine to dispatch incidents.</p>
+    </div>
+  </div>
+
+  <div class="skills-layout">
+    <!-- Skills Management Card -->
+    <div class="card skills-card">
+      <div class="card__header">
+        <div>
+          <h3>Secondary Skills</h3>
+          <p class="card__subtitle">Self-managed specializations (maximum 3 active competencies)</p>
+        </div>
+        <span class="count-badge">{{ skills().length }} / 3 configured</span>
+      </div>
+
+      <p class="card-desc">
+        Secondary skills match you with specialized incident assignments when primary specialists are occupied or unavailable.
+      </p>
+
+      @if (loading()) {
+        <div class="loading-box">
+          <div class="loading-spinner"></div>
+          <p>Loading your skill competencies…</p>
+        </div>
+      } @else {
+        <div class="skills-list">
+          @for (s of skills(); track s.id) {
+            <div class="skill-item">
+              <span class="skill-name">
+                <svg viewBox="0 0 24 24" class="skill-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span>{{ s.skillName }}</span>
+              </span>
+              <button class="btn-icon-delete" (click)="deleteSkill(s)" title="Remove skill">
+                <svg viewBox="0 0 24 24" class="icon icon-sm"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          }
+          @if (skills().length === 0) {
+            <div class="no-skills-box">
+              <p>No secondary skills added yet. Add up to 3 technical competencies below.</p>
+            </div>
+          }
+        </div>
+
+        @if (canAddMore()) {
+          <form [formGroup]="form" (ngSubmit)="addSkill()" class="add-skill-form">
+            <input
+              type="text"
+              formControlName="skillName"
+              placeholder="e.g. BGP Routing, OSPF, VLAN Trunking, IPsec VPN"
+            />
+            <button type="submit" class="btn-primary" [disabled]="isAdding() || form.invalid">
+              {{ isAdding() ? 'Adding…' : '+ Add Skill' }}
+            </button>
+          </form>
+          @if (form.controls.skillName.invalid && form.controls.skillName.touched) {
+            <p class="field-error">Please enter a valid skill name (min 2 characters).</p>
+          }
+        } @else {
+          <div class="limit-reached">
+            <svg viewBox="0 0 24 24" class="icon icon-sm"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Maximum skill limit (3 skills) reached. Remove an existing skill to add a new competency.</span>
+          </div>
+        }
+      }
+    </div>
+
+    <!-- Info Policy Card -->
+    <div class="card info-card">
+      <div class="card__header">
+        <h3>Assignment Engine Policy</h3>
+        <p class="card__subtitle">How automated incident tickets are assigned</p>
+      </div>
+
+      <ul class="policy-list">
+        <li>
+          <span class="policy-num">1</span>
+          <div>
+            <strong>Primary Specialization</strong>
+            <p>Admin-configured primary domain (e.g. Routing & Switching, Firewalls) takes first precedence.</p>
+          </div>
+        </li>
+        <li>
+          <span class="policy-num">2</span>
+          <div>
+            <strong>Secondary Skills</strong>
+            <p>Self-managed skills provide fallback match criteria when primary specialists are engaged.</p>
+          </div>
+        </li>
+        <li>
+          <span class="policy-num">3</span>
+          <div>
+            <strong>Workload & SLA Balancing</strong>
+            <p>Active incident loads and SLA compliance windows determine final auto-dispatch assignment.</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
